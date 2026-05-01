@@ -196,21 +196,3 @@ def simulate():
 # INIT
 # =========================
 
-if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-
-        if not Config.query.first():
-            db.session.add(Config())
-            db.session.commit()
-
-        if not Transaction.query.first():
-            sample = [
-                Transaction(sender_id=1, receiver_id=2, amount=5000, risk_score=0, decision="Allow", reason="Low risk"),
-                Transaction(sender_id=2, receiver_id=3, amount=20000, risk_score=0, decision="Allow", reason="Low risk"),
-                Transaction(sender_id=3, receiver_id=4, amount=200000, risk_score=100, decision="Block", reason="High amount transaction"),
-            ]
-            db.session.add_all(sample)
-            db.session.commit()
-
-    app.run(host='0.0.0.0', port=5000)
