@@ -1,36 +1,101 @@
 <!DOCTYPE html>
 <html>
 <head>
+<meta charset="UTF-8">
+<title>ACE Dashboard</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-body { background:#020617; color:#fff; font-family:Inter; }
-.container { width:90%; margin:auto; }
+body {
+    background:#020617;
+    color:#e5e7eb;
+    font-family: Inter, sans-serif;
+    margin:0;
+}
 
-.header { display:flex; justify-content:space-between; margin:20px 0; }
+/* layout */
+.container {
+    width:92%;
+    margin:auto;
+}
 
-.stats { display:flex; gap:15px; }
-.card { flex:1; padding:20px; background:#0f172a; border-radius:12px; }
+/* header */
+.header {
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin:25px 0;
+}
 
-.grid { display:grid; grid-template-columns:1.2fr 1fr; gap:20px; }
+/* simulate button */
+button {
+    background:#00ff88;
+    border:none;
+    padding:8px 14px;
+    border-radius:8px;
+    cursor:pointer;
+}
 
-.table { margin-top:20px; background:#0f172a; padding:20px; border-radius:12px; }
-
-.allow { color:#00ff88; }
-.flag { color:#ffaa00; }
-.block { color:#ff4444; }
-
+/* live indicator */
 .live-dot {
-    width:8px; height:8px;
+    width:8px;
+    height:8px;
     background:#00ff88;
     border-radius:50%;
     display:inline-block;
+    margin-right:6px;
     animation:pulse 1.5s infinite;
 }
 
 @keyframes pulse {
-    0%{opacity:0.4;}50%{opacity:1;}100%{opacity:0.4;}
+    0%{opacity:0.4;}
+    50%{opacity:1;}
+    100%{opacity:0.4;}
 }
+
+/* grid */
+.grid {
+    display:grid;
+    grid-template-columns:1.2fr 1fr;
+    gap:20px;
+}
+
+/* stats */
+.stats {
+    display:flex;
+    gap:15px;
+}
+
+.card {
+    flex:1;
+    padding:18px;
+    background:#0f172a;
+    border-radius:12px;
+}
+
+/* table */
+.table {
+    margin-top:20px;
+    background:#0f172a;
+    padding:20px;
+    border-radius:12px;
+}
+
+th {
+    text-align:left;
+    color:#9ca3af;
+}
+
+td {
+    padding:10px 0;
+    border-bottom:1px solid rgba(255,255,255,0.05);
+}
+
+/* colors */
+.allow { color:#00ff88; }
+.flag { color:#ffaa00; }
+.block { color:#ff4444; }
+
 </style>
 </head>
 
@@ -38,37 +103,59 @@ body { background:#020617; color:#fff; font-family:Inter; }
 
 <div class="container">
 
+<!-- HEADER -->
 <div class="header">
     <h2>ACE Compliance Monitor</h2>
-    <div><span class="live-dot"></span> Live</div>
+
+    <div>
+        <span class="live-dot"></span>Live
+        <button onclick="simulate()">Simulate</button>
+    </div>
 </div>
 
+<!-- GRID -->
 <div class="grid">
 
-<div>
-<div class="stats">
-<div class="card">Total {{ total }}</div>
-<div class="card">Blocked {{ blocked }}</div>
-<div class="card">Flagged {{ flagged }}</div>
+    <!-- LEFT SIDE -->
+    <div>
+
+        <!-- STATS -->
+        <div class="stats">
+            <div class="card">Total: {{ total }}</div>
+            <div class="card">Blocked: {{ blocked }}</div>
+            <div class="card">Flagged: {{ flagged }}</div>
+        </div>
+
+        <!-- TREND CHART -->
+        <canvas id="trendChart" style="margin-top:20px;"></canvas>
+
+    </div>
+
+    <!-- RIGHT SIDE -->
+    <div>
+        <canvas id="pieChart"></canvas>
+    </div>
+
 </div>
 
-<canvas id="trend"></canvas>
-</div>
-
-<div>
-<canvas id="pie"></canvas>
-</div>
-
-</div>
-
+<!-- TABLE -->
 <div class="table">
 <table width="100%">
-<tr><th>ID</th><th>Amount</th><th>Decision</th></tr>
+<tr>
+    <th>ID</th>
+    <th>Amount</th>
+    <th>Risk</th>
+    <th>Decision</th>
+    <th>Reason</th>
+</tr>
+
 {% for t in transactions %}
 <tr>
-<td>{{t.id}}</td>
-<td>{{t.amount}}</td>
-<td class="{{t.decision|lower}}">{{t.decision}}</td>
+    <td>{{ t.id }}</td>
+    <td>{{ t.amount }}</td>
+    <td>{{ t.risk_score }}</td>
+    <td class="{{ t.decision|lower }}">{{ t.decision }}</td>
+    <td>{{ t.reason }}</td>
 </tr>
 {% endfor %}
 </table>
@@ -77,33 +164,58 @@ body { background:#020617; color:#fff; font-family:Inter; }
 </div>
 
 <script>
-// pie
-new Chart(document.getElementById('pie'), {
-type:'doughnut',
-data:{
-labels:['Allow','Flag','Block'],
-datasets:[{
-data:[{{allow}},{{flag}},{{block}}],
-backgroundColor:['#00ff88','#ffaa00','#ff4444']
-}]
-},
-options:{cutout:'70%'}
-});
 
-// trend
-new Chart(document.getElementById('trend'), {
-type:'line',
-data:{
-labels:{{timestamps|tojson}},
-datasets:[{
-data:{{counts|tojson}},
-borderColor:'#00ff88'
-}]
+/* 🔥 SIMULATE */
+function simulate() {
+    fetch('/simulate')
+    .then(() => location.reload());
 }
+
+/* PIE CHART */
+new Chart(document.getElementById('pieChart'), {
+    type:'doughnut',
+    data:{
+        labels:['Allow','Flag','Block'],
+        datasets:[{
+            data:[{{allow}},{{flag}},{{block}}],
+            backgroundColor:['#00ff88','#ffaa00','#ff4444'],
+            borderWidth:0
+        }]
+    },
+    options:{
+        cutout:'70%',
+        plugins:{
+            legend:{
+                position:'bottom',
+                labels:{color:'#9ca3af'}
+            }
+        }
+    }
 });
 
-// auto refresh
-setInterval(()=>location.reload(),8000);
+/* TREND CHART */
+new Chart(document.getElementById('trendChart'), {
+    type:'line',
+    data:{
+        labels: {{ timestamps|tojson }},
+        datasets:[{
+            data: {{ counts|tojson }},
+            borderColor:'#00ff88',
+            tension:0.4
+        }]
+    },
+    options:{
+        plugins:{ legend:{ display:false }},
+        scales:{
+            x:{ ticks:{color:'#666'}},
+            y:{ ticks:{color:'#666'}}
+        }
+    }
+});
+
+/* AUTO REFRESH */
+setInterval(()=>location.reload(), 8000);
+
 </script>
 
 </body>
