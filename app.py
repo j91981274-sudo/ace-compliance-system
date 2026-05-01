@@ -2,6 +2,10 @@ from flask import Flask, request, jsonify, render_template
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta
 import os
+import random
+
+
+
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///ace.db'
@@ -149,7 +153,24 @@ def update_config():
         message="✅ Rules updated"
     )
 
+@app.route('/simulate')
+def simulate():
+    for _ in range(5):
+        sender = random.randint(1,3)
+        receiver = random.randint(1,3)
+        amount = random.choice([5000, 20000, 60000, 200000])
 
+        # reuse your transaction logic
+        request_data = {
+            "sender_id": sender,
+            "receiver_id": receiver,
+            "amount": amount
+        }
+
+        with app.test_request_context(json=request_data):
+            transaction()
+
+    return "ok"
 # 🔥 NEW: suspicious only endpoint
 @app.route('/suspicious')
 def suspicious():
