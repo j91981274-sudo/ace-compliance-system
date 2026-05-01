@@ -1,99 +1,24 @@
-<!DOCTYPE html>
+k<!DOCTYPE html>
 <html>
 <head>
-    <title>Rules</title>
-
-    <style>
-        body {
-            margin: 0;
-            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
-            background: #0b0f1a;
-            color: #e5e7eb;
-        }
-
-        .container {
-            padding: 40px;
-            max-width: 400px;
-            animation: fadeIn 0.6s ease;
-        }
-
-        h1 {
-            font-weight: 500;
-        }
-
-        input {
-            width: 100%;
-            padding: 10px;
-            margin: 10px 0 20px 0;
-            background: #111827;
-            border: 1px solid #1f2937;
-            color: white;
-            border-radius: 6px;
-            transition: 0.2s;
-        }
-
-        input:focus {
-            outline: none;
-            border-color: #2563eb;
-        }
-
-        button {
-            width: 100%;
-            padding: 10px;
-            background: #2563eb;
-            border: none;
-            border-radius: 6px;
-            color: white;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-
-        button:hover {
-            background: #1d4ed8;
-        }
-
-        a {
-            color: #60a5fa;
-            font-size: 14px;
-        }
-
-        .msg {
-            color: #22c55e;
-            margin-bottom: 10px;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-    </style>
+<style>
+body { background:#020617; color:white; font-family:sans-serif; padding:20px;}
+input,button { padding:10px; margin:10px;}
+</style>
 </head>
-
 <body>
 
-<div class="container">
+<h2>Rule Config</h2>
 
-    <h1>Rule Configuration</h1>
+<form method="POST" action="/update_config">
+<label>High Amount</label><br>
+<input name="high_amount" value="{{config.high_amount}}"><br>
 
-    <a href="/dashboard">← Back</a>
+<label>Rapid Tx Count</label><br>
+<input name="rapid_tx_count" value="{{config.rapid_tx_count}}"><br>
 
-    {% if message %}
-    <div class="msg">{{ message }}</div>
-    {% endif %}
-
-    <form method="POST" action="/update_config">
-
-        <label>High Amount Threshold</label>
-        <input type="number" name="high_amount" value="{{ config.high_amount }}">
-
-        <label>Rapid Transaction Limit</label>
-        <input type="number" name="rapid_tx_count" value="{{ config.rapid_tx_count }}">
-
-        <button type="submit">Save</button>
-
-    </form>
-
-</div>
+<button>Save</button>
+</form>
 
 </body>
 </html>

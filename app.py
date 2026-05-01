@@ -1,215 +1,216 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, redirect, session
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime, timedelta
-import os
+from collections import defaultdict
 import random
 
-
-
-
 app = Flask(__name__)
+app.secret_key = "supersecret"
+
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///ace.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
 db = SQLAlchemy(app)
 
-# ------------------ MODELS ------------------
+# =========================
+# MODELS
+# =========================
 
 class Transaction(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     sender_id = db.Column(db.Integer)
     receiver_id = db.Column(db.Integer)
     amount = db.Column(db.Float)
-    timestamp = db.Column(db.DateTime, default=datetime.now)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     risk_score = db.Column(db.Integer)
     decision = db.Column(db.String(20))
-
-
-class AuditLog(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    transaction_id = db.Column(db.Integer)
-    action = db.Column(db.String(50))
-    reason = db.Column(db.String(200))
-    timestamp = db.Column(db.DateTime, default=datetime.now)
+    reason = db.Column(db.String(100))
 
 
 class Config(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    high_amount = db.Column(db.Integer, default=100000)
-    rapid_tx_count = db.Column(db.Integer, default=3)
+    high_amount = db.Column(db.Float, default=100000)
+    rapid_tx_count = db.Column(db.Integer, default=5)
 
 
-# ------------------ RISK ENGINE ------------------
+# =========================
+# AUTH
+# =========================
+
+USERNAME = "admin"
+PASSWORD = "admin123"
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        if request.form['username'] == USERNAME and request.form['password'] == PASSWORD:
+            session['user'] = USERNAME
+            return redirect('/dashboard')
+    return render_template('login.html')
+
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect('/login')
+
+
+# =========================
+# RISK ENGINE
+# =========================
 
 def calculate_risk(sender_id, amount):
     config = Config.query.first()
-    score = 0
+
+    if not config:
+        config = Config()
+        db.session.add(config)
+        db.session.commit()
 
     if amount > config.high_amount:
-        score += 70
+        return 100, "High amount transaction"
 
-    one_hour_ago = datetime.now() - timedelta(hours=1)
     recent = Transaction.query.filter(
         Transaction.sender_id == sender_id,
-        Transaction.timestamp >= one_hour_ago
+        Transaction.timestamp >= datetime.utcnow() - timedelta(minutes=1)
     ).count()
 
     if recent >= config.rapid_tx_count:
-        score += 30
+        return 70, "Suspicious pattern"
 
-    return score
-
-
-# ------------------ DECISION ENGINE ------------------
-
-def make_decision(score):
-    if score >= 70:
-        return "Block"
-    elif score >= 20:
-        return "Flag"
-    else:
-        return "Allow"
+    return 0, "Low risk"
 
 
-# ------------------ ACTION ------------------
-
-def log_action(tx_id, action, reason):
-    log = AuditLog(
-        transaction_id=tx_id,
-        action=action,
-        reason=reason
-    )
-    db.session.add(log)
-    db.session.commit()
-
-
-# ------------------ ROUTES ------------------
+# =========================
+# ROUTES
+# =========================
 
 @app.route('/')
 def home():
-    return {"system": "ACE running"}
+    return jsonify({"system": "ACE running"})
+
+
+@app.route('/dashboard')
+def dashboard():
+    if 'user' not in session:
+        return redirect('/login')
+
+    transactions = Transaction.query.order_by(Transaction.id.desc()).all()
+
+    total = len(transactions)
+    blocked = sum(1 for t in transactions if t.decision == "Block")
+    flagged = sum(1 for t in transactions if t.decision == "Flag")
+    allow = sum(1 for t in transactions if t.decision == "Allow")
+
+    # REAL trend grouping
+    buckets = defaultdict(int)
+    for t in transactions:
+        key = t.timestamp.strftime("%H:%M")
+        buckets[key] += 1
+
+    timestamps = list(buckets.keys())
+    counts = list(buckets.values())
+
+    return render_template(
+        "dashboard.html",
+        transactions=transactions,
+        total=total,
+        blocked=blocked,
+        flagged=flagged,
+        allow=allow,
+        flag=flagged,
+        block=blocked,
+        timestamps=timestamps,
+        counts=counts
+    )
 
 
 @app.route('/transaction', methods=['POST'])
-def process_transaction():
+def transaction():
     data = request.json
 
-    score = calculate_risk(data['sender_id'], data['amount'])
-    decision = make_decision(score)
+    risk, reason = calculate_risk(data['sender_id'], data['amount'])
+
+    if risk >= 100:
+        decision = "Block"
+    elif risk >= 50:
+        decision = "Flag"
+    else:
+        decision = "Allow"
 
     tx = Transaction(
         sender_id=data['sender_id'],
         receiver_id=data['receiver_id'],
         amount=data['amount'],
-        risk_score=score,
-        decision=decision
+        risk_score=risk,
+        decision=decision,
+        reason=reason
     )
 
     db.session.add(tx)
     db.session.commit()
 
-    if decision == "Block":
-        log_action(tx.id, "Blocked", "High risk")
-    elif decision == "Flag":
-        log_action(tx.id, "Flagged", "Suspicious pattern")
-    else:
-        log_action(tx.id, "Allowed", "Low risk")
-
     return jsonify({
-        "transaction_id": tx.id,
-        "risk_score": score,
-        "decision": decision
+        "decision": decision,
+        "risk_score": risk,
+        "transaction_id": tx.id
     })
 
 
-@app.route('/dashboard')
-def dashboard():
-    transactions = Transaction.query.all()
-    logs = AuditLog.query.all()
-
-    return render_template(
-        'dashboard.html',
-        transactions=transactions,
-        logs=logs
-    )
-
-
-@app.route('/config')
-def config_page():
-    config = Config.query.first()
-    return render_template('config.html', config=config)
-
-
-@app.route('/update_config', methods=['POST'])
-def update_config():
-    config = Config.query.first()
-
-    config.high_amount = int(request.form['high_amount'])
-    config.rapid_tx_count = int(request.form['rapid_tx_count'])
-
-    db.session.commit()
-
-    return render_template(
-        'config.html',
-        config=config,
-        message="✅ Rules updated"
-    )
+# =========================
+# 🔥 SIMULATION ROUTE
+# =========================
 
 @app.route('/simulate')
 def simulate():
     for _ in range(5):
-        sender = random.randint(1,3)
-        receiver = random.randint(1,3)
+        sender = random.randint(1, 5)
+        receiver = random.randint(1, 5)
         amount = random.choice([5000, 20000, 60000, 200000])
 
-        # reuse your transaction logic
-        request_data = {
-            "sender_id": sender,
-            "receiver_id": receiver,
-            "amount": amount
-        }
+        risk, reason = calculate_risk(sender, amount)
 
-        with app.test_request_context(json=request_data):
-            transaction()
+        if risk >= 100:
+            decision = "Block"
+        elif risk >= 50:
+            decision = "Flag"
+        else:
+            decision = "Allow"
 
-    return "ok"
-# 🔥 NEW: suspicious only endpoint
-@app.route('/suspicious')
-def suspicious():
-    txs = Transaction.query.filter(Transaction.decision != "Allow").all()
-
-    return jsonify([
-        {
-            "id": t.id,
-            "amount": t.amount,
-            "risk": t.risk_score,
-            "decision": t.decision
-        } for t in txs
-    ])
-
-
-# 🔥 NEW: simulate transactions
-@app.route('/simulate')
-def simulate():
-    for i in range(5):
         tx = Transaction(
-            sender_id=99,
-            receiver_id=2,
-            amount=20000,
-            risk_score=30,
-            decision="Flag"
+            sender_id=sender,
+            receiver_id=receiver,
+            amount=amount,
+            risk_score=risk,
+            decision=decision,
+            reason=reason
         )
+
         db.session.add(tx)
 
     db.session.commit()
-    return {"message": "Simulation complete"}
+    return jsonify({"status": "simulated"})
 
 
-# ------------------ INIT ------------------
+# =========================
+# INIT
+# =========================
 
 if __name__ == '__main__':
     with app.app_context():
         db.create_all()
+
         if not Config.query.first():
             db.session.add(Config())
             db.session.commit()
 
-    app.run(host='0.0.0.0', port=int(os.environ.get("PORT", 5000)))
+        if not Transaction.query.first():
+            sample = [
+                Transaction(sender_id=1, receiver_id=2, amount=5000, risk_score=0, decision="Allow", reason="Low risk"),
+                Transaction(sender_id=2, receiver_id=3, amount=20000, risk_score=0, decision="Allow", reason="Low risk"),
+                Transaction(sender_id=3, receiver_id=4, amount=200000, risk_score=100, decision="Block", reason="High amount transaction"),
+            ]
+            db.session.add_all(sample)
+            db.session.commit()
+
+    app.run(host='0.0.0.0', port=5000)

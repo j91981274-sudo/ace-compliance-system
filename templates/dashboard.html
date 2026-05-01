@@ -1,186 +1,109 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>ACE Dashboard</title>
-    <style>
-        body {
-            margin: 0;
-            font-family: 'Segoe UI', sans-serif;
-            background: radial-gradient(circle at top, #0f172a, #020617);
-            color: #e2e8f0;
-        }
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
-        .container {
-            padding: 30px 50px;
-        }
+<style>
+body { background:#020617; color:#fff; font-family:Inter; }
+.container { width:90%; margin:auto; }
 
-        h1 {
-            font-weight: 600;
-            letter-spacing: 1px;
-        }
+.header { display:flex; justify-content:space-between; margin:20px 0; }
 
-        .topbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 25px;
-        }
+.stats { display:flex; gap:15px; }
+.card { flex:1; padding:20px; background:#0f172a; border-radius:12px; }
 
-        .card-container {
-            display: flex;
-            gap: 20px;
-            margin-bottom: 25px;
-        }
+.grid { display:grid; grid-template-columns:1.2fr 1fr; gap:20px; }
 
-        .card {
-            flex: 1;
-            padding: 20px;
-            border-radius: 12px;
-            background: rgba(15, 23, 42, 0.7);
-            backdrop-filter: blur(8px);
-            border: 1px solid rgba(255,255,255,0.05);
-            transition: 0.2s;
-        }
+.table { margin-top:20px; background:#0f172a; padding:20px; border-radius:12px; }
 
-        .card:hover {
-            transform: translateY(-3px);
-            border-color: #38bdf8;
-        }
+.allow { color:#00ff88; }
+.flag { color:#ffaa00; }
+.block { color:#ff4444; }
 
-        .card h3 {
-            margin: 0;
-            font-size: 14px;
-            color: #94a3b8;
-        }
+.live-dot {
+    width:8px; height:8px;
+    background:#00ff88;
+    border-radius:50%;
+    display:inline-block;
+    animation:pulse 1.5s infinite;
+}
 
-        .card p {
-            font-size: 22px;
-            margin-top: 5px;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background: rgba(15, 23, 42, 0.6);
-            border-radius: 10px;
-            overflow: hidden;
-        }
-
-        th, td {
-            padding: 12px;
-            text-align: left;
-        }
-
-        th {
-            color: #94a3b8;
-            font-weight: 500;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-        }
-
-        tr:hover {
-            background: rgba(255,255,255,0.03);
-        }
-
-        .decision {
-            font-weight: bold;
-        }
-
-        .allow { color: #22c55e; }
-        .flag { color: #facc15; }
-        .block { color: #ef4444; }
-
-        .risk-bar {
-            height: 6px;
-            border-radius: 5px;
-            background: #1e293b;
-            overflow: hidden;
-        }
-
-        .risk-fill {
-            height: 100%;
-            background: linear-gradient(to right, #22c55e, #facc15, #ef4444);
-        }
-
-        .button {
-            background: #38bdf8;
-            border: none;
-            padding: 10px 18px;
-            border-radius: 8px;
-            cursor: pointer;
-            color: black;
-            font-weight: 600;
-        }
-
-        .button:hover {
-            background: #0ea5e9;
-        }
-
-    </style>
+@keyframes pulse {
+    0%{opacity:0.4;}50%{opacity:1;}100%{opacity:0.4;}
+}
+</style>
 </head>
+
 <body>
 
 <div class="container">
 
-    <div class="topbar">
-        <h1>🚀 ACE Compliance Dashboard</h1>
-        <button class="button" onclick="simulate()">Simulate</button>
-    </div>
+<div class="header">
+    <h2>ACE Compliance Monitor</h2>
+    <div><span class="live-dot"></span> Live</div>
+</div>
 
-    <div class="card-container">
-        <div class="card">
-            <h3>Total</h3>
-            <p>{{ total }}</p>
-        </div>
-        <div class="card">
-            <h3>Blocked</h3>
-            <p>{{ blocked }}</p>
-        </div>
-        <div class="card">
-            <h3>Flagged</h3>
-            <p>{{ flagged }}</p>
-        </div>
-    </div>
+<div class="grid">
 
-    <table>
-        <tr>
-            <th>ID</th>
-            <th>Amount</th>
-            <th>Risk</th>
-            <th>Decision</th>
-            <th>Reason</th>
-        </tr>
+<div>
+<div class="stats">
+<div class="card">Total {{ total }}</div>
+<div class="card">Blocked {{ blocked }}</div>
+<div class="card">Flagged {{ flagged }}</div>
+</div>
 
-        {% for t in transactions %}
-        <tr>
-            <td>{{ t.id }}</td>
-            <td>{{ t.amount }}</td>
-            <td>
-                {{ t.risk_score }}
-                <div class="risk-bar">
-                    <div class="risk-fill" style="width: {{ t.risk_score }}%"></div>
-                </div>
-            </td>
+<canvas id="trend"></canvas>
+</div>
 
-            <td class="decision
-                {% if t.decision == 'Allow' %}allow{% endif %}
-                {% if t.decision == 'Flag' %}flag{% endif %}
-                {% if t.decision == 'Block' %}block{% endif %}
-            ">
-                {{ t.decision }}
-            </td>
+<div>
+<canvas id="pie"></canvas>
+</div>
 
-            <td>{{ t.reason }}</td>
-        </tr>
-        {% endfor %}
-    </table>
+</div>
+
+<div class="table">
+<table width="100%">
+<tr><th>ID</th><th>Amount</th><th>Decision</th></tr>
+{% for t in transactions %}
+<tr>
+<td>{{t.id}}</td>
+<td>{{t.amount}}</td>
+<td class="{{t.decision|lower}}">{{t.decision}}</td>
+</tr>
+{% endfor %}
+</table>
+</div>
 
 </div>
 
 <script>
-function simulate() {
-    fetch('/simulate')
-    .then(() => location.reload());
+// pie
+new Chart(document.getElementById('pie'), {
+type:'doughnut',
+data:{
+labels:['Allow','Flag','Block'],
+datasets:[{
+data:[{{allow}},{{flag}},{{block}}],
+backgroundColor:['#00ff88','#ffaa00','#ff4444']
+}]
+},
+options:{cutout:'70%'}
+});
+
+// trend
+new Chart(document.getElementById('trend'), {
+type:'line',
+data:{
+labels:{{timestamps|tojson}},
+datasets:[{
+data:{{counts|tojson}},
+borderColor:'#00ff88'
+}]
 }
+});
+
+// auto refresh
+setInterval(()=>location.reload(),8000);
 </script>
 
 </body>
