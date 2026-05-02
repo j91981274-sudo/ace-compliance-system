@@ -1,221 +1,294 @@
-<!DOCTYPE html>
-<html>
 <head>
-<meta charset="UTF-8">
-<title>ACE Dashboard</title>
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>ACE Core</title>
 
-<style>
-body {
-    background:#020617;
-    color:#e5e7eb;
-    font-family: Inter, sans-serif;
-    margin:0;
-}
+    <!-- ✅ FAVICON -->
+    <link rel="icon" type="image/png" href="/static/favicon.png">
 
-/* layout */
-.container {
-    width:92%;
-    margin:auto;
-}
+    <!-- LIBS -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
 
-/* header */
-.header {
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    margin:25px 0;
-}
+    <style>
+        body {
+            margin: 0;
+            background: #020409;
+            font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+            color: #d1d5db;
+        }
 
-/* simulate button */
-button {
-    background:#00ff88;
-    border:none;
-    padding:8px 14px;
-    border-radius:8px;
-    cursor:pointer;
-}
+        .container {
+            max-width: 1200px;
+            margin: auto;
+            padding: 30px;
+        }
 
-/* live indicator */
-.live-dot {
-    width:8px;
-    height:8px;
-    background:#00ff88;
-    border-radius:50%;
-    display:inline-block;
-    margin-right:6px;
-    animation:pulse 1.5s infinite;
-}
+        h1 {
+            font-size: 14px;
+            color: #6b7280;
+            text-transform: uppercase;
+        }
 
-@keyframes pulse {
-    0%{opacity:0.4;}
-    50%{opacity:1;}
-    100%{opacity:0.4;}
-}
+        a {
+            color: #4b5563;
+            margin-right: 12px;
+            font-size: 11px;
+            text-decoration: none;
+        }
 
-/* grid */
-.grid {
-    display:grid;
-    grid-template-columns:1.2fr 1fr;
-    gap:20px;
-}
+        input {
+            background: transparent;
+            border: 1px solid #111827;
+            color: #e5e7eb;
+            padding: 8px;
+        }
 
-/* stats */
-.stats {
-    display:flex;
-    gap:15px;
-}
+        button {
+            background: transparent;
+            border: 1px solid #1f2937;
+            color: #9ca3af;
+            padding: 8px 12px;
+            cursor: pointer;
+        }
 
-.card {
-    flex:1;
-    padding:18px;
-    background:#0f172a;
-    border-radius:12px;
-}
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            margin: 20px 0;
+            border: 1px solid #111827;
+        }
 
-/* table */
-.table {
-    margin-top:20px;
-    background:#0f172a;
-    padding:20px;
-    border-radius:12px;
-}
+        .card {
+            padding: 15px;
+            border-right: 1px solid #111827;
+        }
 
-th {
-    text-align:left;
-    color:#9ca3af;
-}
+        .card:last-child {
+            border-right: none;
+        }
 
-td {
-    padding:10px 0;
-    border-bottom:1px solid rgba(255,255,255,0.05);
-}
+        .card h3 {
+            font-size: 10px;
+            color: #6b7280;
+        }
 
-/* colors */
-.allow { color:#00ff88; }
-.flag { color:#ffaa00; }
-.block { color:#ff4444; }
+        .card p {
+            font-size: 16px;
+        }
 
-</style>
+        .charts {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .chart-box {
+            border: 1px solid #111827;
+            padding: 15px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 11px;
+            border: 1px solid #111827;
+        }
+
+        th, td {
+            padding: 10px;
+        }
+
+        th {
+            color: #6b7280;
+        }
+
+        tr {
+            border-top: 1px solid #111827;
+        }
+
+        tr:hover {
+            background: #060a12;
+        }
+
+        .allow { color: #22c55e; }
+        .block { color: #ef4444; }
+        .flag { color: #eab308; }
+
+        /* ALERTS */
+        #alerts {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 260px;
+            z-index: 999;
+        }
+
+        .alert {
+            background: #05070d;
+            border: 1px solid #111827;
+            padding: 10px;
+            margin-bottom: 10px;
+            font-size: 11px;
+        }
+
+        .alert.block { border-left: 3px solid #ef4444; }
+        .alert.flag { border-left: 3px solid #eab308; }
+    </style>
 </head>
 
 <body>
 
+<div id="alerts"></div>
+
 <div class="container">
 
-<!-- HEADER -->
-<div class="header">
-    <h2>ACE Compliance Monitor</h2>
+    <h1>ACE CORE SYSTEM</h1>
 
-    <div>
-        <span class="live-dot"></span>Live
-        <button onclick="simulate()">Simulate</button>
-    </div>
-</div>
+    <a href="/config">CONFIG</a>
+    <a href="/logout">EXIT</a>
 
-<!-- GRID -->
-<div class="grid">
+    <form method="POST" action="/add_tx">
+        <input type="number" name="amount" placeholder="INPUT VALUE">
+        <button>EXECUTE</button>
+    </form>
 
-    <!-- LEFT SIDE -->
-    <div>
-
-        <!-- STATS -->
-        <div class="stats">
-            <div class="card">Total: {{ total }}</div>
-            <div class="card">Blocked: {{ blocked }}</div>
-            <div class="card">Flagged: {{ flagged }}</div>
+    <div class="cards">
+        <div class="card">
+            <h3>Total</h3>
+            <p id="total">{{ total }}</p>
         </div>
-
-        <!-- TREND CHART -->
-        <canvas id="trendChart" style="margin-top:20px;"></canvas>
-
+        <div class="card">
+            <h3>Blocked</h3>
+            <p id="blocked">{{ blocked }}</p>
+        </div>
+        <div class="card">
+            <h3>Flagged</h3>
+            <p id="flagged">{{ flagged }}</p>
+        </div>
     </div>
 
-    <!-- RIGHT SIDE -->
-    <div>
-        <canvas id="pieChart"></canvas>
+    <div class="charts">
+        <div class="chart-box">
+            <canvas id="lineChart"></canvas>
+        </div>
+        <div class="chart-box">
+            <canvas id="donutChart"></canvas>
+        </div>
     </div>
 
-</div>
+    <table id="txTable">
+        <tr>
+            <th>ID</th>
+            <th>Amount</th>
+            <th>Risk</th>
+            <th>Status</th>
+            <th>Reason</th>
+        </tr>
 
-<!-- TABLE -->
-<div class="table">
-<table width="100%">
-<tr>
-    <th>ID</th>
-    <th>Amount</th>
-    <th>Risk</th>
-    <th>Decision</th>
-    <th>Reason</th>
-</tr>
-
-{% for t in transactions %}
-<tr>
-    <td>{{ t.id }}</td>
-    <td>{{ t.amount }}</td>
-    <td>{{ t.risk_score }}</td>
-    <td class="{{ t.decision|lower }}">{{ t.decision }}</td>
-    <td>{{ t.reason }}</td>
-</tr>
-{% endfor %}
-</table>
-</div>
+        {% for t in transactions %}
+        <tr>
+            <td>{{ t.id }}</td>
+            <td>{{ t.amount }}</td>
+            <td>{{ t.risk }}</td>
+            <td class="{% if t.decision == 'Allow' %}allow{% elif t.decision == 'Block' %}block{% else %}flag{% endif %}">
+                {{ t.decision }}
+            </td>
+            <td>{{ t.reason }}</td>
+        </tr>
+        {% endfor %}
+    </table>
 
 </div>
 
 <script>
+const socket = io();
 
-/* 🔥 SIMULATE */
-function simulate() {
-    fetch('/simulate')
-    .then(() => location.reload());
-}
+let labels = {{ transactions | map(attribute='id') | list | tojson }};
+let risks = {{ transactions | map(attribute='risk') | list | tojson }};
 
-/* PIE CHART */
-new Chart(document.getElementById('pieChart'), {
-    type:'doughnut',
-    data:{
-        labels:['Allow','Flag','Block'],
-        datasets:[{
-            data:[{{allow}},{{flag}},{{block}}],
-            backgroundColor:['#00ff88','#ffaa00','#ff4444'],
-            borderWidth:0
+let total = {{ total }};
+let blocked = {{ blocked }};
+let flagged = {{ flagged }};
+
+const lineChart = new Chart(document.getElementById("lineChart"), {
+    type: 'line',
+    data: {
+        labels: labels,
+        datasets: [{
+            data: risks,
+            borderColor: '#3b82f6'
         }]
-    },
-    options:{
-        cutout:'70%',
-        plugins:{
-            legend:{
-                position:'bottom',
-                labels:{color:'#9ca3af'}
-            }
-        }
     }
 });
 
-/* TREND CHART */
-new Chart(document.getElementById('trendChart'), {
-    type:'line',
-    data:{
-        labels: {{ timestamps|tojson }},
-        datasets:[{
-            data: {{ counts|tojson }},
-            borderColor:'#00ff88',
-            tension:0.4
+const donutChart = new Chart(document.getElementById("donutChart"), {
+    type: 'doughnut',
+    data: {
+        labels: ['Allow','Flag','Block'],
+        datasets: [{
+            data: [total - blocked - flagged, flagged, blocked],
+            backgroundColor: ['#22c55e','#eab308','#ef4444'],
+            borderWidth: 0
         }]
     },
-    options:{
-        plugins:{ legend:{ display:false }},
-        scales:{
-            x:{ ticks:{color:'#666'}},
-            y:{ ticks:{color:'#666'}}
-        }
+    options: {
+        cutout: '85%'
     }
 });
 
-/* AUTO REFRESH */
-setInterval(()=>location.reload(), 8000);
+socket.on("new_tx", function(t) {
 
+    const table = document.getElementById("txTable");
+
+    let cls = t.decision === "Allow" ? "allow" :
+              t.decision === "Block" ? "block" : "flag";
+
+    table.insertAdjacentHTML("beforeend", `
+        <tr>
+            <td>${t.id}</td>
+            <td>${t.amount}</td>
+            <td>${t.risk}</td>
+            <td class="${cls}">${t.decision}</td>
+            <td>${t.reason}</td>
+        </tr>
+    `);
+
+    // ALERTS
+    if (t.decision !== "Allow") {
+        const alertBox = document.getElementById("alerts");
+
+        const alert = document.createElement("div");
+        alert.className = "alert " + t.decision.toLowerCase();
+
+        alert.innerHTML = `
+            ${t.decision} — ${t.amount}<br>
+            ${t.reason}
+        `;
+
+        alertBox.appendChild(alert);
+
+        setTimeout(() => alert.remove(), 4000);
+    }
+
+    total++;
+    if (t.decision === "Block") blocked++;
+    if (t.decision === "Flag") flagged++;
+
+    document.getElementById("total").innerText = total;
+    document.getElementById("blocked").innerText = blocked;
+    document.getElementById("flagged").innerText = flagged;
+
+    lineChart.data.labels.push(t.id);
+    lineChart.data.datasets[0].data.push(t.risk);
+    lineChart.update();
+
+    donutChart.data.datasets[0].data = [
+        total - blocked - flagged,
+        flagged,
+        blocked
+    ];
+    donutChart.update();
+});
 </script>
 
 </body>

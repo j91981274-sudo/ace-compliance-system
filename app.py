@@ -1,62 +1,123 @@
 from flask import Flask, render_template, request, redirect, session
 from flask_sqlalchemy import SQLAlchemy
+from flask_socketio import SocketIO
 import os
 
 app = Flask(__name__)
 app.secret_key = "secret"
 
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///ace.db'
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///db.sqlite3"
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db = SQLAlchemy(app)
+socketio = SocketIO(app)
 
-
-# ---------------- MODELS ----------------
-class User(db.Model):
+# -----------------------
+# MODEL
+# -----------------------
+class Transaction(db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(50), unique=True)
-    password = db.Column(db.String(50))
+    amount = db.Column(db.Float)
+    risk = db.Column(db.Integer)
+    decision = db.Column(db.String(10))
+    reason = db.Column(db.String(100))
 
 
-# ---------------- INIT DB ----------------
-with app.app_context():
-    db.create_all()
+# -----------------------
+# ROUTES
+# -----------------------
 
-    # create default user if not exists
-    if not User.query.filter_by(username="admin").first():
-        db.session.add(User(username="admin", password="admin"))
-        db.session.commit()
-
-
-# ---------------- ROUTES ----------------
 @app.route("/")
 def home():
-    return {"system": "ACE running"}
+    return redirect("/login")
 
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        username = request.form.get("username")
-        password = request.form.get("password")
-
-        user = User.query.filter_by(username=username, password=password).first()
-
-        if user:
-            session["user"] = username
-            return redirect("/dashboard")
-
+        session["user"] = request.form["username"]
+        return redirect("/dashboard")
     return render_template("login.html")
-
-
-@app.route("/dashboard")
-def dashboard():
-    if "user" not in session:
-        return redirect("/login")
-    return render_template("dashboard.html")
 
 
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect("/login")
+
+
+@app.route("/dashboard")
+def dashboard():
+    if "user" not in session:
+        return redirect("/login")
+
+    transactions = Transaction.query.order_by(Transaction.id.desc()).all()
+
+    total = len(transactions)
+    blocked = len([t for t in transactions if t.decision == "Block"])
+    flagged = len([t for t in transactions if t.decision == "Flag"])
+
+    return render_template(
+        "dashboard.html",
+        transactions=transactions,
+        total=total,
+        blocked=blocked,
+        flagged=flagged
+    )
+
+
+# ✅ CONFIG PAGE
+@app.route("/config")
+def config():
+    return render_template("config.html")
+
+
+# ✅ FIXED ADD TX (ONLY ONE ROUTE — NO DUPLICATES)
+@app.route("/add_tx", methods=["POST"])
+def add_tx():
+    amount = float(request.form["amount"])
+
+    # basic logic (you can improve later)
+    if amount > 10000:
+        decision = "Block"
+        risk = 90
+        reason = "High amount"
+    elif amount > 5000:
+        decision = "Flag"
+        risk = 30
+        reason = "Medium risk"
+    else:
+        decision = "Allow"
+        risk = 0
+        reason = "Normal"
+
+    new_tx = Transaction(
+        amount=amount,
+        risk=risk,
+        decision=decision,
+        reason=reason
+    )
+
+    db.session.add(new_tx)
+    db.session.commit()
+
+    # real-time push
+    socketio.emit("new_tx", {
+        "id": new_tx.id,
+        "amount": new_tx.amount,
+        "risk": new_tx.risk,
+        "decision": new_tx.decision,
+        "reason": new_tx.reason
+    })
+
+    return redirect("/dashboard")
+
+
+# -----------------------
+# RUN
+# -----------------------
+if __name__ == "__main__":
+    with app.app_context():
+        db.create_all()
+
+    socketio.run(app, host="0.0.0.0", port=5000, debug=True)

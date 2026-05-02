@@ -1,23 +1,63 @@
-k<!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
 <style>
-body { background:#020617; color:white; font-family:sans-serif; padding:20px;}
-input,button { padding:10px; margin:10px;}
+body {
+    background:#020617;
+    color:white;
+    font-family:sans-serif;
+    padding:20px;
+}
+
+input, button {
+    padding:10px;
+    margin:10px 0;
+    width: 250px;
+    border-radius: 6px;
+    border: none;
+}
+
+input {
+    background:#1a1f35;
+    color:white;
+}
+
+button {
+    background:#00c6ff;
+    cursor:pointer;
+}
+
+button:hover {
+    background:#00a8e0;
+}
+
+a {
+    color:#00c6ff;
+    text-decoration:none;
+}
 </style>
 </head>
+
 <body>
 
 <h2>Rule Config</h2>
 
+<a href="/dashboard">← Back to Dashboard</a>
+
 <form method="POST" action="/update_config">
-<label>High Amount</label><br>
-<input name="high_amount" value="{{config.high_amount}}"><br>
 
-<label>Rapid Tx Count</label><br>
-<input name="rapid_tx_count" value="{{config.rapid_tx_count}}"><br>
+    <label>High Amount</label><br>
+    <input type="number" name="high_amount"
+           value="{{ config.high_amount if config else '' }}"
+           required><br>
 
-<button>Save</button>
+    <label>Rapid Tx Count</label><br>
+    <input type="number" name="rapid_tx_count"
+           value="{{ config.rapid_tx_count if config else '' }}"
+           required><br>
+
+    <button type="submit">Save</button>
+
 </form>
 
 </body>
