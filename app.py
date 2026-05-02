@@ -115,24 +115,41 @@ def add_tx():
     if "user_id" not in session:
         return redirect("/login")
 
-    amount = float(request.form["amount"])
+    try:
+        amount = float(request.form["amount"])
+    except:
+        return redirect("/dashboard")
 
     cfg = Config.query.first()
 
-    # 🔥 FIX: auto-create config if missing
+    # auto-create config if missing
     if not cfg:
         cfg = Config(high_amount=10000)
         db.session.add(cfg)
         db.session.commit()
 
+    # 🔥 smarter fraud logic
+    recent = Transaction.query.filter_by(
+        user_id=session["user_id"]
+    ).order_by(Transaction.id.desc()).limit(3).all()
+
+    rapid = len(recent) >= 3 and all(t.amount < 500 for t in recent)
+
     if amount > cfg.high_amount:
         decision = "Block"
         risk = 90
         reason = "High amount"
+
+    elif rapid:
+        decision = "Flag"
+        risk = 50
+        reason = "Rapid transactions"
+
     elif amount > (cfg.high_amount / 2):
         decision = "Flag"
         risk = 30
         reason = "Medium risk"
+
     else:
         decision = "Allow"
         risk = 0

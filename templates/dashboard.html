@@ -3,66 +3,95 @@
 <head>
     <title>ACE Core</title>
 
-    <meta name="google-adsense-account" content="ca-pub-478039175540164">
-
+    <meta name="google-adsense-account" content="ca-pub-4780393175540164">
     <link rel="icon" type="image/png" href="/static/favicon.png">
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
 
     <style>
         body {
             margin: 0;
-            background: #020409;
-            font-family: monospace;
-            color: #d1d5db;
+            background: radial-gradient(circle at top, #0f172a, #020617);
+            font-family: 'Segoe UI', sans-serif;
+            color: #e5e7eb;
         }
 
         .container {
-            max-width: 1100px;
+            max-width: 1200px;
             margin: auto;
             padding: 30px;
         }
 
         h1 {
-            font-size: 14px;
-            color: #6b7280;
+            font-size: 18px;
+            color: #9ca3af;
+            margin-bottom: 20px;
         }
 
-        input, button {
-            padding: 8px;
-            margin: 5px;
-            background: #111827;
-            border: 1px solid #1f2937;
-            color: #e5e7eb;
-        }
-
-        .cards {
-            display: flex;
-            gap: 10px;
-            margin: 20px 0;
-        }
-
+        /* 🔥 glass cards */
         .card {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .row .card {
             flex: 1;
-            padding: 15px;
-            border: 1px solid #111827;
+        }
+
+        input {
+            padding: 10px;
+            background: #020617;
+            border: 1px solid #1f2937;
+            color: white;
+            border-radius: 6px;
+        }
+
+        button {
+            padding: 10px 14px;
+            background: #2563eb;
+            border: none;
+            color: white;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        .actions {
+            margin: 15px 0;
+        }
+
+        .actions a button {
+            margin-right: 10px;
+            background: #111827;
         }
 
         table {
             width: 100%;
-            border-collapse: collapse;
             margin-top: 20px;
+            border-collapse: collapse;
         }
 
-        td, th {
-            padding: 8px;
-            border-bottom: 1px solid #111827;
+        th, td {
+            padding: 10px;
+            border-bottom: 1px solid #1f2937;
         }
 
         .allow { color: #22c55e; }
         .block { color: #ef4444; }
         .flag { color: #eab308; }
+
     </style>
 </head>
 
@@ -70,98 +99,68 @@
 
 <div class="container">
 
-    <h1>ACE CORE SYSTEM</h1>
+    <h1>⚡ ACE CORE SYSTEM</h1>
 
     <form method="POST" action="/add_tx">
-        <input type="number" name="amount" placeholder="Amount">
-        <button>EXECUTE</button>
+        <input type="number" name="amount" placeholder="Enter amount">
+        <button>Execute</button>
     </form>
 
-    <div>
-        <a href="/export"><button>EXPORT</button></a>
-        <a href="/upgrade"><button>UPGRADE</button></a>
-        <a href="/config"><button>CONFIG</button></a>
-        <a href="/logout"><button>LOGOUT</button></a>
+    <div class="actions">
+        <a href="/export"><button>Export</button></a>
+        <a href="/upgrade"><button>Upgrade</button></a>
+        <a href="/config"><button>Config</button></a>
+        <a href="/logout"><button>Logout</button></a>
     </div>
 
-    <div class="cards">
-        <div class="card">Total: <span id="total">{{ total }}</span></div>
-        <div class="card">Blocked: <span id="blocked">{{ blocked }}</span></div>
-        <div class="card">Flagged: <span id="flagged">{{ flagged }}</span></div>
+    <div class="row">
+        <div class="card">Total<br><b id="total">{{ total }}</b></div>
+        <div class="card">Blocked<br><b id="blocked">{{ blocked }}</b></div>
+        <div class="card">Flagged<br><b id="flagged">{{ flagged }}</b></div>
     </div>
 
-    <canvas id="chart"></canvas>
+    <div class="card">
+        <canvas id="chart"></canvas>
+    </div>
 
-    <table id="txTable">
-        <tr>
-            <th>ID</th>
-            <th>Amount</th>
-            <th>Risk</th>
-            <th>Status</th>
-            <th>Reason</th>
-        </tr>
+    <div class="card">
+        <table id="txTable">
+            <tr>
+                <th>ID</th>
+                <th>Amount</th>
+                <th>Risk</th>
+                <th>Status</th>
+                <th>Reason</th>
+            </tr>
 
-        {% for t in transactions %}
-        <tr>
-            <td>{{ t.id }}</td>
-            <td>{{ t.amount }}</td>
-            <td>{{ t.risk }}</td>
-            <td class="{% if t.decision=='Allow' %}allow{% elif t.decision=='Block' %}block{% else %}flag{% endif %}">
-                {{ t.decision }}
-            </td>
-            <td>{{ t.reason }}</td>
-        </tr>
-        {% endfor %}
-    </table>
+            {% for t in transactions %}
+            <tr>
+                <td>{{ t.id }}</td>
+                <td>{{ t.amount }}</td>
+                <td>{{ t.risk }}</td>
+                <td class="{% if t.decision=='Allow' %}allow{% elif t.decision=='Block' %}block{% else %}flag{% endif %}">
+                    {{ t.decision }}
+                </td>
+                <td>{{ t.reason }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
 
 </div>
 
 <script>
-const socket = io();
-
-let total = {{ total }};
-let blocked = {{ blocked }};
-let flagged = {{ flagged }};
-
 const chart = new Chart(document.getElementById("chart"), {
     type: 'line',
     data: {
         labels: [],
         datasets: [{
+            label: "Risk Score",
             data: [],
-            borderColor: '#3b82f6'
+            borderColor: '#3b82f6',
+            tension: 0.3
         }]
     }
-});
-
-socket.on("new_tx", function(t) {
-
-    const table = document.getElementById("txTable");
-
-    let cls = t.decision === "Allow" ? "allow" :
-              t.decision === "Block" ? "block" : "flag";
-
-    table.insertAdjacentHTML("beforeend", `
-        <tr>
-            <td>${t.id}</td>
-            <td>${t.amount}</td>
-            <td>${t.risk}</td>
-            <td class="${cls}">${t.decision}</td>
-            <td>${t.reason}</td>
-        </tr>
-    `);
-
-    total++;
-    if (t.decision === "Block") blocked++;
-    if (t.decision === "Flag") flagged++;
-
-    document.getElementById("total").innerText = total;
-    document.getElementById("blocked").innerText = blocked;
-    document.getElementById("flagged").innerText = flagged;
-
-    chart.data.labels.push(t.id);
-    chart.data.datasets[0].data.push(t.risk);
-    chart.update();
 });
 </script>
 
