@@ -175,6 +175,11 @@ def export():
     return Response(generate(), mimetype="text/csv",
                     headers={"Content-Disposition": "attachment;filename=data.csv"})
 
+@app.route("/reset")
+def reset():
+    db.drop_all()
+    db.create_all()
+    return "DB Reset Done"
 
 @app.route("/upgrade")
 def upgrade():
