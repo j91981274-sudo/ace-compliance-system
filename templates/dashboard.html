@@ -3,7 +3,7 @@
 <head>
     <title>ACE Core</title>
 
-    <meta name="google-adsense-account" content="ca-pub-4780393175540164">
+    <meta name="google-adsense-account" content="ca-pub-478039175540164">
     <link rel="icon" type="image/png" href="/static/favicon.png">
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -12,7 +12,7 @@
         body {
             margin: 0;
             background: radial-gradient(circle at top, #0f172a, #020617);
-            font-family: 'Segoe UI', sans-serif;
+            font-family: "Segoe UI", sans-serif;
             color: #e5e7eb;
         }
 
@@ -28,7 +28,6 @@
             margin-bottom: 20px;
         }
 
-        /* 🔥 glass cards */
         .card {
             background: rgba(255,255,255,0.05);
             backdrop-filter: blur(10px);
@@ -92,6 +91,15 @@
         .block { color: #ef4444; }
         .flag { color: #eab308; }
 
+        #toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 12px;
+            background: #ef4444;
+            border-radius: 6px;
+            display: none;
+        }
     </style>
 </head>
 
@@ -102,7 +110,7 @@
     <h1>⚡ ACE CORE SYSTEM</h1>
 
     <form method="POST" action="/add_tx">
-        <input type="number" name="amount" placeholder="Enter amount">
+        <input type="number" name="amount" placeholder="Enter amount" required>
         <button>Execute</button>
     </form>
 
@@ -149,6 +157,8 @@
 
 </div>
 
+<div id="toast">⚠️ High-risk transaction blocked</div>
+
 <script>
 const chart = new Chart(document.getElementById("chart"), {
     type: 'line',
@@ -162,6 +172,13 @@ const chart = new Chart(document.getElementById("chart"), {
         }]
     }
 });
+
+// 🔥 simple alert effect
+function showToast() {
+    const t = document.getElementById("toast");
+    t.style.display = "block";
+    setTimeout(() => t.style.display = "none", 3000);
+}
 </script>
 
 </body>

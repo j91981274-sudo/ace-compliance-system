@@ -1,57 +1,100 @@
 <!DOCTYPE html>
 <html>
-
 <head>
     <title>ACE Config</title>
 
     <meta name="google-adsense-account" content="ca-pub-478039175540164">
-
     <link rel="icon" type="image/png" href="/static/favicon.png">
 
     <style>
         body {
-            background: #020617;
-            color: white;
-            font-family: sans-serif;
+            margin: 0;
+            background: radial-gradient(circle at top, #0f172a, #020617);
+            font-family: "Segoe UI", sans-serif;
+            color: #e5e7eb;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 80px auto;
             padding: 30px;
+        }
+
+        .card {
+            background: rgba(255,255,255,0.05);
+            backdrop-filter: blur(12px);
+            border-radius: 12px;
+            padding: 25px;
+            border: 1px solid rgba(255,255,255,0.1);
         }
 
         h2 {
             margin-bottom: 20px;
+            font-weight: 500;
+            color: #9ca3af;
         }
 
-        input, button {
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 14px;
+            color: #9ca3af;
+        }
+
+        input {
+            width: 100%;
             padding: 10px;
-            margin: 10px 0;
-            width: 250px;
-            border-radius: 6px;
-            border: none;
-            background: #111827;
+            margin-bottom: 18px;
+            background: #020617;
+            border: 1px solid #1f2937;
             color: white;
+            border-radius: 6px;
         }
 
         button {
+            padding: 10px 14px;
+            background: #2563eb;
+            border: none;
+            border-radius: 6px;
+            color: white;
             cursor: pointer;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        .actions {
+            margin-top: 15px;
+        }
+
+        .actions a button {
+            margin-right: 10px;
+            background: #111827;
         }
     </style>
 </head>
 
 <body>
 
-<h2>CONFIG SETTINGS</h2>
+<div class="container">
+    <div class="card">
 
-<form method="POST">
-    <label>High Amount Threshold</label><br>
-    <input type="number" name="high_amount" value="{{ cfg.high_amount }}" required><br>
+        <h2>⚙️ Configuration</h2>
 
-    <button type="submit">SAVE</button>
-</form>
+        <form method="POST">
+            <label>High Amount Threshold</label>
+            <input type="number" name="high_amount" value="{{ cfg.high_amount }}" required>
 
-<br>
+            <button type="submit">Save Changes</button>
+        </form>
 
-<a href="/dashboard">
-    <button>BACK TO DASHBOARD</button>
-</a>
+        <div class="actions">
+            <a href="/dashboard"><button>Back</button></a>
+        </div>
+
+    </div>
+</div>
 
 </body>
 </html>
