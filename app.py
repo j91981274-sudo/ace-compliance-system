@@ -23,6 +23,11 @@ class Transaction(db.Model):
     reason = db.Column(db.String(100))
 
 
+class Config(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    high_amount = db.Column(db.Float, default=10000)
+    rapid_tx = db.Column(db.Integer, default=5)
+
 # -----------------------
 # ROUTES
 # -----------------------
@@ -67,10 +72,28 @@ def dashboard():
 
 
 # ✅ CONFIG PAGE
-@app.route("/config")
+@app.route("/config", methods=["GET", "POST"])
 def config():
-    return render_template("config.html")
+    cfg = Config.query.first()
 
+    if not cfg:
+        cfg = Config()
+        db.session.add(cfg)
+        db.session.commit()
+
+    if request.method == "POST":
+        cfg.high_amount = float(request.form["high_amount"])
+        cfg.rapid_tx = int(request.form["rapid_tx"])
+        db.session.commit()
+
+        return redirect("/dashboard")
+
+    return render_template("config.html", cfg=cfg)
+
+
+@app.route("/ping")
+def ping():
+    return "ok"
 
 # ✅ FIXED ADD TX (ONLY ONE ROUTE — NO DUPLICATES)
 @app.route("/add_tx", methods=["POST"])
@@ -78,11 +101,13 @@ def add_tx():
     amount = float(request.form["amount"])
 
     # basic logic (you can improve later)
-    if amount > 10000:
+    cfg = Config.query.first()
+
+    if amount > cfg.high_amount:
         decision = "Block"
         risk = 90
         reason = "High amount"
-    elif amount > 5000:
+    elif amount > (cfg.high_amount / 2):
         decision = "Flag"
         risk = 30
         reason = "Medium risk"

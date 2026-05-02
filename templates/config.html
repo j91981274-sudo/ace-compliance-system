@@ -44,20 +44,15 @@ a {
 
 <a href="/dashboard">← Back to Dashboard</a>
 
-<form method="POST" action="/update_config">
 
-    <label>High Amount</label><br>
-    <input type="number" name="high_amount"
-           value="{{ config.high_amount if config else '' }}"
-           required><br>
+<form method="POST" action="/config">
+    <label>High Amount</label>
+    <input type="number" name="high_amount" value="{{ cfg.high_amount }}">
 
-    <label>Rapid Tx Count</label><br>
-    <input type="number" name="rapid_tx_count"
-           value="{{ config.rapid_tx_count if config else '' }}"
-           required><br>
+    <label>Rapid Tx Count</label>
+    <input type="number" name="rapid_tx" value="{{ cfg.rapid_tx }}">
 
     <button type="submit">Save</button>
-
 </form>
 
 </body>
