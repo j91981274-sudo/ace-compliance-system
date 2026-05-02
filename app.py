@@ -116,7 +116,14 @@ def add_tx():
         return redirect("/login")
 
     amount = float(request.form["amount"])
+
     cfg = Config.query.first()
+
+    # 🔥 FIX: auto-create config if missing
+    if not cfg:
+        cfg = Config(high_amount=10000)
+        db.session.add(cfg)
+        db.session.commit()
 
     if amount > cfg.high_amount:
         decision = "Block"
@@ -141,14 +148,6 @@ def add_tx():
 
     db.session.add(new_tx)
     db.session.commit()
-
-    socketio.emit("new_tx", {
-        "id": new_tx.id,
-        "amount": new_tx.amount,
-        "risk": new_tx.risk,
-        "decision": new_tx.decision,
-        "reason": new_tx.reason
-    })
 
     return redirect("/dashboard")
 
