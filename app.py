@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, session, Response
+kfrom flask import Flask, render_template, request, redirect, session, Response
 from flask_sqlalchemy import SQLAlchemy
 from flask_socketio import SocketIO
 import os
@@ -172,14 +172,12 @@ def export():
         for t in transactions:
             yield f"{t.id},{t.amount},{t.risk},{t.decision},{t.reason}\n"
 
-    return Response(generate(), mimetype="text/csv",
-                    headers={"Content-Disposition": "attachment;filename=data.csv"})
+    return Response(
+        generate(),
+        mimetype="text/csv",
+        headers={"Content-Disposition": "attachment; filename=data.csv"}
+    )
 
-@app.route("/reset")
-def reset():
-    db.drop_all()
-    db.create_all()
-    return "DB Reset Done"
 
 @app.route("/upgrade")
 def upgrade():
@@ -191,6 +189,14 @@ def upgrade():
     db.session.commit()
 
     return redirect("/dashboard")
+
+
+# TEMP FIX ROUTE (use once, then remove)
+@app.route("/reset")
+def reset():
+    db.drop_all()
+    db.create_all()
+    return "DB Reset Done"
 
 
 # -----------------------
