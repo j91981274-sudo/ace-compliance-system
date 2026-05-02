@@ -1,35 +1,49 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>ACE Compliance System</title>
-
-    <link rel="icon" type="image/png" href="/static/favicon.png">
+    <title>ACE Compliance</title>
+    <link rel="icon" href="/static/favicon.png">
 
     <style>
         body {
             margin: 0;
-            background: radial-gradient(circle at top, #0f172a, #020617);
             font-family: "Segoe UI", sans-serif;
+            background: radial-gradient(circle at top, #0f172a, #020617);
             color: #e5e7eb;
         }
 
-        .container {
-            text-align: center;
-            padding: 120px 20px;
+        .nav {
+            display: flex;
+            justify-content: space-between;
+            padding: 20px 40px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
         }
 
-        h1 {
-            font-size: 40px;
+        .nav a {
+            color: #9ca3af;
+            text-decoration: none;
+            margin-left: 20px;
+        }
+
+        .hero {
+            text-align: center;
+            padding: 120px 20px 80px;
+        }
+
+        .hero h1 {
+            font-size: 42px;
             margin-bottom: 10px;
         }
 
-        p {
+        .hero p {
             color: #9ca3af;
-            margin-bottom: 30px;
+            max-width: 600px;
+            margin: auto;
         }
 
-        button {
-            padding: 12px 20px;
+        .btn {
+            margin-top: 30px;
+            padding: 12px 24px;
             background: #2563eb;
             border: none;
             border-radius: 6px;
@@ -38,57 +52,107 @@
             cursor: pointer;
         }
 
-        button:hover {
+        .btn:hover {
             background: #1d4ed8;
         }
 
+        .section {
+            padding: 80px 20px;
+            text-align: center;
+        }
+
         .features {
-            margin-top: 80px;
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .card {
+            width: 260px;
+            padding: 25px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 10px;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .pricing {
+            margin-top: 40px;
             display: flex;
             justify-content: center;
             gap: 40px;
         }
 
-        .card {
-            width: 250px;
-            padding: 20px;
-            background: rgba(255,255,255,0.05);
+        .price-card {
+            width: 260px;
+            padding: 30px;
             border-radius: 10px;
+            background: rgba(255,255,255,0.05);
             border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .price {
+            font-size: 28px;
+            margin: 10px 0;
         }
     </style>
 </head>
 
 <body>
 
-<div class="container">
+<div class="nav">
+    <div><b>ACE</b></div>
+    <div>
+        <a href="/login">Login</a>
+    </div>
+</div>
 
-    <h1>⚡ ACE Compliance System</h1>
-    <p>Real-time transaction monitoring and fraud detection</p>
+<div class="hero">
+    <h1>⚡ Fraud Detection, Simplified</h1>
+    <p>Monitor transactions, detect anomalies, and manage risk in real time.</p>
 
     <a href="/login">
-        <button>Enter Dashboard</button>
+        <button class="btn">Get Started</button>
     </a>
+</div>
+
+<div class="section">
+    <h2>Features</h2>
 
     <div class="features">
-
         <div class="card">
-            <h3>Real-Time Detection</h3>
-            <p>Analyze transactions instantly</p>
+            <h3>Real-Time Monitoring</h3>
+            <p>Track transactions instantly with live analytics.</p>
         </div>
 
         <div class="card">
-            <h3>Risk Scoring</h3>
-            <p>Automatically flag suspicious activity</p>
+            <h3>Smart Risk Engine</h3>
+            <p>Detect suspicious activity automatically.</p>
         </div>
 
         <div class="card">
-            <h3>Export Data</h3>
-            <p>Download reports with premium access</p>
+            <h3>Export & Reports</h3>
+            <p>Download insights with premium features.</p>
         </div>
-
     </div>
+</div>
 
+<div class="section">
+    <h2>Pricing</h2>
+
+    <div class="pricing">
+        <div class="price-card">
+            <h3>Free</h3>
+            <div class="price">$0</div>
+            <p>Basic monitoring</p>
+        </div>
+
+        <div class="price-card">
+            <h3>Premium</h3>
+            <div class="price">$5</div>
+            <p>Export data + advanced tools</p>
+        </div>
+    </div>
 </div>
 
 </body>
