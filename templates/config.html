@@ -4,63 +4,54 @@
 <head>
     <title>ACE Config</title>
 
-    <!-- ADSENSE META (correct method) -->
     <meta name="google-adsense-account" content="ca-pub-478039175540164">
 
+    <link rel="icon" type="image/png" href="/static/favicon.png">
+
     <style>
+        body {
+            background: #020617;
+            color: white;
+            font-family: sans-serif;
+            padding: 30px;
+        }
 
-body {
-    background:#020617;
-    color:white;
-    font-family:sans-serif;
-    padding:20px;
-}
+        h2 {
+            margin-bottom: 20px;
+        }
 
-input, button {
-    padding:10px;
-    margin:10px 0;
-    width: 250px;
-    border-radius: 6px;
-    border: none;
-}
+        input, button {
+            padding: 10px;
+            margin: 10px 0;
+            width: 250px;
+            border-radius: 6px;
+            border: none;
+            background: #111827;
+            color: white;
+        }
 
-input {
-    background:#1a1f35;
-    color:white;
-}
-
-button {
-    background:#00c6ff;
-    cursor:pointer;
-}
-
-button:hover {
-    background:#00a8e0;
-}
-
-a {
-    color:#00c6ff;
-    text-decoration:none;
-}
-</style>
+        button {
+            cursor: pointer;
+        }
+    </style>
 </head>
 
 <body>
 
-<h2>Rule Config</h2>
+<h2>CONFIG SETTINGS</h2>
 
-<a href="/dashboard">← Back to Dashboard</a>
+<form method="POST">
+    <label>High Amount Threshold</label><br>
+    <input type="number" name="high_amount" value="{{ cfg.high_amount }}" required><br>
 
-
-<form method="POST" action="/config">
-    <label>High Amount</label>
-    <input type="number" name="high_amount" value="{{ cfg.high_amount }}">
-
-    <label>Rapid Tx Count</label>
-    <input type="number" name="rapid_tx" value="{{ cfg.rapid_tx }}">
-
-    <button type="submit">Save</button>
+    <button type="submit">SAVE</button>
 </form>
+
+<br>
+
+<a href="/dashboard">
+    <button>BACK TO DASHBOARD</button>
+</a>
 
 </body>
 </html>

@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, session
+from flask import Flask, render_template, request, redirect, session, Response
 from flask_sqlalchemy import SQLAlchemy
 from flask_socketio import SocketIO
 import os
@@ -13,20 +13,29 @@ db = SQLAlchemy(app)
 socketio = SocketIO(app)
 
 # -----------------------
-# MODEL
+# MODELS
 # -----------------------
+
+class User(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(50), unique=True)
+    password = db.Column(db.String(50))
+    is_premium = db.Column(db.Boolean, default=False)
+
+
 class Transaction(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     amount = db.Column(db.Float)
     risk = db.Column(db.Integer)
     decision = db.Column(db.String(10))
     reason = db.Column(db.String(100))
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"))
 
 
 class Config(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     high_amount = db.Column(db.Float, default=10000)
-    rapid_tx = db.Column(db.Integer, default=5)
+
 
 # -----------------------
 # ROUTES
@@ -40,8 +49,19 @@ def home():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        session["user"] = request.form["username"]
+        username = request.form["username"]
+        password = request.form["password"]
+
+        user = User.query.filter_by(username=username).first()
+
+        if not user:
+            user = User(username=username, password=password)
+            db.session.add(user)
+            db.session.commit()
+
+        session["user_id"] = user.id
         return redirect("/dashboard")
+
     return render_template("login.html")
 
 
@@ -53,10 +73,12 @@ def logout():
 
 @app.route("/dashboard")
 def dashboard():
-    if "user" not in session:
+    if "user_id" not in session:
         return redirect("/login")
 
-    transactions = Transaction.query.order_by(Transaction.id.desc()).all()
+    transactions = Transaction.query.filter_by(
+        user_id=session["user_id"]
+    ).all()
 
     total = len(transactions)
     blocked = len([t for t in transactions if t.decision == "Block"])
@@ -71,7 +93,6 @@ def dashboard():
     )
 
 
-# ✅ CONFIG PAGE
 @app.route("/config", methods=["GET", "POST"])
 def config():
     cfg = Config.query.first()
@@ -83,24 +104,18 @@ def config():
 
     if request.method == "POST":
         cfg.high_amount = float(request.form["high_amount"])
-        cfg.rapid_tx = int(request.form["rapid_tx"])
         db.session.commit()
-
         return redirect("/dashboard")
 
     return render_template("config.html", cfg=cfg)
 
 
-@app.route("/ping")
-def ping():
-    return "ok"
-
-# ✅ FIXED ADD TX (ONLY ONE ROUTE — NO DUPLICATES)
 @app.route("/add_tx", methods=["POST"])
 def add_tx():
-    amount = float(request.form["amount"])
+    if "user_id" not in session:
+        return redirect("/login")
 
-    # basic logic (you can improve later)
+    amount = float(request.form["amount"])
     cfg = Config.query.first()
 
     if amount > cfg.high_amount:
@@ -120,13 +135,13 @@ def add_tx():
         amount=amount,
         risk=risk,
         decision=decision,
-        reason=reason
+        reason=reason,
+        user_id=session["user_id"]
     )
 
     db.session.add(new_tx)
     db.session.commit()
 
-    # real-time push
     socketio.emit("new_tx", {
         "id": new_tx.id,
         "amount": new_tx.amount,
@@ -138,15 +153,47 @@ def add_tx():
     return redirect("/dashboard")
 
 
+@app.route("/export")
+def export():
+    if "user_id" not in session:
+        return redirect("/login")
+
+    user = User.query.get(session["user_id"])
+
+    if not user.is_premium:
+        return "Upgrade to premium to export data"
+
+    transactions = Transaction.query.filter_by(
+        user_id=session["user_id"]
+    ).all()
+
+    def generate():
+        yield "ID,Amount,Risk,Decision,Reason\n"
+        for t in transactions:
+            yield f"{t.id},{t.amount},{t.risk},{t.decision},{t.reason}\n"
+
+    return Response(generate(), mimetype="text/csv",
+                    headers={"Content-Disposition": "attachment;filename=data.csv"})
+
+
+@app.route("/upgrade")
+def upgrade():
+    if "user_id" not in session:
+        return redirect("/login")
+
+    user = User.query.get(session["user_id"])
+    user.is_premium = True
+    db.session.commit()
+
+    return redirect("/dashboard")
+
+
 # -----------------------
 # RUN
 # -----------------------
+
 if __name__ == "__main__":
     with app.app_context():
         db.create_all()
 
-    socketio.run(
-        app,
-        host="0.0.0.0",
-        port=int(os.environ.get("PORT", 5000))
-    )
+    socketio.run(app, host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
